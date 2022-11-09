@@ -1,5 +1,5 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -eo pipefail
 
 NIX=$(realpath "$(command -v nix)")
 NIX_STORE_PATH=${NIX%/bin/nix}
@@ -16,18 +16,6 @@ Arguments:
   exit 1
 }
 
-#echo  >&2 "Upgrade nix CLI for current user:"
-#"$NIX" profile list
-#echo -n >&2 "Type number of profile to replace for current user (empty to not remove a profile): "
-#read -r answer
-#if [[ -n $answer ]]; then
-#  "$NIX" profile remove "$answer"
-#fi
-
-#NIX_REF+=("--priority" "0")
-
-#"$NIX" profile install "${NIX_REF[@]}"
-
 echo  >&2 "Upgrade nix for root user/daemon to $NIX_STORE_PATH:"
 sudo "$NIX" profile list
 echo -n >&2 "Type number of profile to replace for root user (empty to not remove a profile): "
@@ -38,7 +26,18 @@ fi
 
 echo >&2 "installing nix profile"
 sudo "$NIX" profile install "${NIX_REF[@]}"
-echo >&2 "reloading systemd configs"
-sudo systemctl daemon-reload
+
 echo >&2 "restarting nix-daemon"
-sudo systemctl restart nix-daemon
+if command -v systemctl >/dev/null 2>&1; then
+  # On Linux with systemd
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now nix-daemon
+  sudo systemctl restart nix-daemon
+elif command -v launchctl >/dev/null 2>&1; then
+  # On MacOS
+  sudo launchctl stop org.nixos.nix-daemon
+  sudo launchctl start org.nixos.nix-daemon
+else
+  echo >&2 "Warning: Couldn't detect how to restart nix-daemon"
+  echo >&2 "You will have to manually restart nix-daemon for configuration changes to take effect"
+fi
