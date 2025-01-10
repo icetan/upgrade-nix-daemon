@@ -19,7 +19,7 @@ Arguments:
 
 echo  >&2 "Upgrade nix for root user/daemon to $NIX_STORE_PATH:"
 sudo "$NIX" "${NIX_ARGS[@]}" profile list
-echo -n >&2 "Type number of profile to replace for root user (empty to not remove a profile): "
+echo -n >&2 "Type name of profile to replace for root user (empty to not remove a profile): "
 read -r answer
 if [[ -n $answer ]]; then
   sudo "$NIX" "${NIX_ARGS[@]}" profile remove "$answer"
