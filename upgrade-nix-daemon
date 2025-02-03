@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+DEBUG=${DEBUG:-}
+if [[ -n $DEBUG ]]; then set -x; fi
+
 NIX=$(realpath "$(command -v nix)")
 NIX_ARGS=(--extra-experimental-features "nix-command flakes")
 NIX_STORE_PATH=${NIX%/bin/nix}
@@ -21,9 +24,11 @@ echo  >&2 "Upgrade nix for root user/daemon to $NIX_STORE_PATH:"
 sudo "$NIX" "${NIX_ARGS[@]}" profile list
 echo -n >&2 "Type name of profile to replace for root user (empty to not remove a profile): "
 read -r answer
-if [[ -n $answer ]]; then
-  sudo "$NIX" "${NIX_ARGS[@]}" profile remove "$answer"
-fi
+for profile in $answer; do
+  if [[ -n $profile ]]; then
+    sudo "$NIX" "${NIX_ARGS[@]}" profile remove "$profile"
+  fi
+done
 
 echo >&2 "installing nix profile"
 sudo "$NIX" "${NIX_ARGS[@]}" profile install "${NIX_REF[@]}"
